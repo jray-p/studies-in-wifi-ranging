@@ -1,0 +1,121 @@
+\documentclass[10pt,letterpaper]{article}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{amsmath}
+% \usepackage{subfig}
+\usepackage{subcaption}
+\usepackage{amssymb}
+\usepackage{wrapfig}
+\usepackage[margin=1in]{geometry}
+\usepackage{tikz}
+
+\pagestyle{fancyplain}
+\rhead{Wifi Ranging using RSSI and FTM}
+
+\begin{document}
+
+
+
+\section{Background}
+The intent of this document is to show how range can be determined
+between two nodes using COTS wifi hardware. This document uses
+received signal strength indicator (RSSI) to estimate distance between
+a wifi client and and wifi access point (AP).
+
+RSSI is the signal strength received for a given wifi signal. By
+comparing the measured signal strength against a model of the free
+path loss, we can get an estimate of the distance between transmitter
+and receiver.
+
+The free path loss model used here is defined by
+
+\[ \frac{D_0}{10^{\frac{R_{rss} - R_0}{10 * N}}} \]
+
+Where $D_0$ and $R_0$ are the initially measured distance and power
+respectively. $N$ is the free path loss environmental factor. This is
+generally 2-3 and depends on the environment. $R_{rss}$ is the
+measured power for which we are estimating distance.
+
+\section{RSSI Experiment Setup}
+A regular COTS Wifi AP can be used, but these results were generated
+with another laptop acting as an AP. This was done for more control
+over the wifi channel being used to capture RSSI readings: the local
+wifi environment was 5GHz band, so the laptop was set up to host an AP
+on a 2.4GHz channel. The laptop was running linux and the program
+\textbf{create\_ap} with the following configuration:
+
+\begin{verbatim}
+CHANNEL=default
+GATEWAY=192.168.12.1
+WPA_VERSION=2
+ETC_HOSTS=0
+DHCP_DNS=gateway
+NO_DNS=0
+NO_DNSMASQ=0
+HIDDEN=0
+MAC_FILTER=0
+MAC_FILTER_ACCEPT=/etc/hostapd/hostapd.accept
+ISOLATE_CLIENTS=0
+SHARE_METHOD=nat
+IEEE80211N=0
+IEEE80211AC=0
+IEEE80211AX=0
+HT_CAPAB=[HT40+]
+VHT_CAPAB=
+DRIVER=nl80211
+NO_VIRT=0
+COUNTRY=
+FREQ_BAND=2.4
+NEW_MACADDR=
+DAEMONIZE=0
+NO_HAVEGED=0
+WIFI_IFACE=wlp0s20f3
+INTERNET_IFACE=eno1
+SSID=<ap name>
+PASSPHRASE=<pass phase>
+USE_PSK=0
+\end{verbatim}
+
+Another laptop was used as the wifi client, connecting to the above AP
+using the built-in wifi connection programs.  The AP laptop was static
+and the client laptop was moved between 1 and 8 meters away in a
+straight line.
+
+Measurements were generated on the client laptop using a few python
+scripts. \textbf{utils.py} contains the function to generate the actual
+measurement and uses only built-in python modules.
+\textbf{plot\_rssi\_ranging.py} reads the measurements, aggregates, filters and
+plots the data and uses a few external dependencies (pandas,
+matplotlib).
+
+Three experiments were run: LOS, NLOS and interference. In the LOS
+case, there was direct line of sight between the AP and client. In the
+NLOS case, a large peice of metal was put roughly 0.5 meters in front
+of the AP, blocking line of sight. Finally, in the interfernce case, a
+mobile phone streaming vidoe was also connected to the AP and placed
+roughly 0.25 meters away from the client.
+
+The AP laptop starts the access point with the command: \textbf{create\_ap
+--config /etc/create\_ap.conf}. The client laptop is placed at 1 meter
+increments from 1 to 8 meters. \textbf{rssi\_capture} function is run from
+\textbf{utils.py} at each measurement point, with a file name indicating its
+position. This was repeated for the NLOS and interference cases.
+
+The data was plotted by running \textbf{plot\_rssi\_ranging.py} in the
+directory with the capture \textbf{*.csv} files from above.
+
+\section{FTM}
+TBD
+
+\section{Results}
+There median error over distance for RSSI around under 2 meters in the
+LOS case and slightly higher for the NLOS case. At 7 meters in the
+NLOS case however, the error is very large; this is likely due to the
+specific geometries of the transmitter / receiver in this setup. 
+
+\includegraphics{RSSI_over_distance}
+\\
+\includegraphics{RSSI_Distance_median_error}
+
+
+\end{document}
